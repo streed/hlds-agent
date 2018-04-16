@@ -121,7 +121,9 @@ class MessageHandler(Handler):
                            'vote_required': vote_required}
         else:
             vote = re.search(data, r'for map change to "([^"]+)" has been passed, performing action.')
-            map_name = vote.groups()
+            if vote:
+                map_name = vote.groups()
+                out['vote'] = {'map_name': map_name}
 
         return out
 
