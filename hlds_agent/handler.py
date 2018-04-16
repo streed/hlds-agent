@@ -59,7 +59,7 @@ class MessageHandler(Handler):
         elif data.startswith("Log"):
             out = self.handle_log(data[4:], out)
         elif data.startswith("Loading") or data.startswith("Started"):
-            out = self.handle_log(data[8:], out)
+            out = self.handle_map(data[8:], out)
         elif data.startswith("Rcon"):
             out = self.handle_rcon(data[5:], out)
         else:
@@ -85,11 +85,36 @@ class MessageHandler(Handler):
 
     def handle_log(self, data, out):
         out['type'] = 'log'
+
+        log_data = re.search(r'file started \(file "([^"]+)"\) \(game "([^"]+)"\) \(version "([^"]+)"\)', data)
+
+        if log_data:
+            file_name, game, version = log_data.groups()
+
+            out['log'] = {'file_name': file_name,
+                          'game': game,
+                          'version': version}
+
         return out
 
 
     def handle_rcon(self, data, out):
         out['type'] = 'rcon'
+
+        return out
+
+
+    def handle_map(self, data, out):
+        out['type'] = 'map'
+
+        map_name = re.search(r'map "([^"]+)"', data)
+
+        if map_name:
+            map_name = map_name.groups()
+
+            out['map'] = {'map_name': map_name[0]}
+
+        return out
 
 
     def handle_game(self, data, out):
@@ -104,7 +129,7 @@ class MessageHandler(Handler):
         elif data.startswith('Player'):
             out = self.handle_player(data[7:], out)
         else:
-            out = self.handle_player_interactions(data, out)
+            out = self.handle_interactions(data, out)
 
         return out
 
@@ -130,6 +155,16 @@ class MessageHandler(Handler):
     def handle_kick(self, data, out):
         out['type'] = 'game_kick'
 
+        kick_data = re.search(r'"([^<]+)<([\d]+)><(STEAM_\d+:\d:\d+)><(.*)>" was kicked by "([^"]+)"', data)
+
+        if kick_data:
+            player_name, uid, steam_id, _, kicked_by = kick_data.groups()
+
+            out['kick'] = {'player': {'name': player_name,
+                                      'uid': int(uid),
+                                      'steam_id': steam_id},
+                           'kicked_by': kicked_by}
+
         return out
 
     def handle_world(self, data, out):
@@ -147,8 +182,19 @@ class MessageHandler(Handler):
 
         return out
 
-    def handle_player_interactions(self, data, out):
-        out['type'] = 'game_player_interactions'
+    def handle_interactions(self, data, out):
+        out['type'] = 'game_interaction'
+
+        interaction_data = re.search(r'"([^<]+)<([^>]+)><([^<]+)><([^>]+)>" (.*)', data)
+
+        if interaction_data:
+            name, _type, steam_id, team, action = interaction_data.groups()
+
+            out['interaction'] = {'who': name,
+                                  'entity_type': _type,
+                                  'steam_id': steam_id,
+                                  'team': team,
+                                  'action': action}
 
         return out
 
