@@ -32,9 +32,18 @@ class CleanHandler(Handler):
         logLine = data[10:-2].decode('utf-8')
         logLine = logLine.rstrip('\n')
 
-        out['raw'] = logLine
+        return self._next.parse(logLine, out)
+
+class RawHandler(Handler):
+
+    def __init__(self, _next):
+        super().__init__(_next)
+
+    def parse(self, data, out):
+        out['raw'] = data
 
         return self._next.parse(logLine, out)
+
 
 
 class DateHandler(Handler):
@@ -45,7 +54,10 @@ class DateHandler(Handler):
 
     def parse(self, data, out):
         date = data[:21]
-        out['date'] = datetime.strptime(date, "%d/%m/%Y - %H:%M:%S")
+        try:
+            out['date'] = datetime.strptime(date, "%d/%m/%Y - %H:%M:%S")
+        except ValueError as e:
+            out['date'] = datetime.strptime(date, "%m/%d/%Y - %H:%M:%S")
 
         return self._next(data[23:], out)
 
@@ -170,11 +182,39 @@ class MessageHandler(Handler):
     def handle_world(self, data, out):
         out['type'] = 'game_world'
 
+        world_parsed = re.search(r'triggered "([^"]+)"', data)
+
+        if world_parsed:
+            out['action'] = world_parsed.groups()[0]
+
         return out
 
     def handle_team(self, data, out):
         out['type'] = 'game_team'
 
+        team_parsed = re.search(r'"([^"]+)" triggered "([^"]+)" \(\1 "([^"]+)"\) \(([\w_]+) "([^"]+)"\)', data)
+
+        if team_parsed:
+            team_a_name, did, team_a_score, team_b_name, team_b_score = team_parsed.groups()
+
+            out['action'] = {'team_a': team_a_name,
+                             'did': did,
+                             'team_a_score': team_a_score,
+                             'team_b': team_b_name,
+                             'team_b_score': team_b_score}
+        else:
+            team_parsed = re.search(r'"([^"]+)" ([^ ]+) "([^"]+)" ([^ ]+) "([^"]+)" (.*)', data)
+
+            if team_parsed:
+                out['type'] = 'game_team_stats'
+                team, did, x, adverb, y, z = team_parsed.groups()
+
+                out['stats'] = {'team': team,
+                                'did': did,
+                                'x': x,
+                                'adverb': adverb,
+                                'y': y,
+                                'z': z}
         return out
 
     def handle_player(self, data, out):
@@ -190,36 +230,46 @@ class MessageHandler(Handler):
         if interaction_data:
             name, _type, steam_id, team, action = interaction_data.groups()
 
-            out['interaction'] = {'who': name,
-                                  'entity_type': _type,
-                                  'steam_id': steam_id,
-                                  'team': team,
-                                  'action': self.handle_action(action)}
+            if action.startswith("stats:"):
+                out = self.handle_player_stats(action, out)
+            else:
+                out['interaction'] = {'who': name,
+                                      'entity_type': _type,
+                                      'steam_id': steam_id,
+                                      'team': team,
+                                      'action': self.handle_action(action)}
         return out
 
     def handle_action(self, action):
-        if action.startswith("stats:"):
-            return self.handle_player_stats(action)
+        action_parse = re.search(r'([\w]+) "([^<]+)<([^>]+)><([^<]+)><([^>]+)>" ([\w]+) "(.*)"', action)
+
+        if action_parse:
+            verb, name, _type, steam_id, team, adverb, noun = action_parse.groups()
+
+            return {'verb': verb,
+                    'name': name,
+                    'type': _type,
+                    'team': team,
+                    'steam_id': steam_id,
+                    'adverb': adverb,
+                    'noun': noun}
         else:
-            action_parse = re.search(r'([\w]+) "([^<]+)<([^>]+)><([^<]+)><([^>]+)>" ([\w]+) "(.*)"', action)
+            killed_by = re.search(r'has been killed by "([^"]+)"', action)
 
-            if action_parse:
-                verb, name, _type, steam_id, team, adverb, noun = action_parse.groups()
+            if killed_by:
 
-                return {'verb': verb,
-                        'name': name,
-                        'type': _type,
-                        'team': team,
-                        'steam_id': steam_id,
-                        'adverb': adverb,
-                        'noun': noun}
-            else:
-                killed_by = re.search(r'has been killed by "([^"]+)"', action)
+                return {'verb': 'killed by',
+                        'noun': killed_by.groups()[0]}
 
-                if killed_by:
+    def handle_player_stats(self, stats, out):
+        stats_parsed = re.search(r'stats: frags="([^"]+)" deaths="([^"]+)" health="([^"]+)"', stats)
 
-                    return {'verb': 'killed by',
-                            'noun': killed_by.groups()[0]}
+        if stats_parsed:
+            frags, deaths, health = stats_parsed.groups()
 
-    def handle_player_stats(self, stats):
-        return {}
+            out['type'] = 'game_player_stats'
+            out['stats'] = {'frags': float(frags),
+                            'deaths': float(deaths),
+                            'health': float(health)}
+        return out
+
