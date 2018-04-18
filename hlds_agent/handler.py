@@ -1,6 +1,7 @@
 import asyncore
 import re
 import struct
+import time
 
 from datetime import datetime
 
@@ -42,7 +43,7 @@ class RawHandler(Handler):
     def parse(self, data, out):
         out['raw'] = data
 
-        return self._next.parse(logLine, out)
+        return self._next.parse(data, out)
 
 
 
@@ -58,6 +59,8 @@ class DateHandler(Handler):
             out['date'] = datetime.strptime(date, "%d/%m/%Y - %H:%M:%S")
         except ValueError as e:
             out['date'] = datetime.strptime(date, "%m/%d/%Y - %H:%M:%S")
+
+        out['date'] = time.mktime(out['date'].timetuple())
 
         return self._next(data[23:], out)
 

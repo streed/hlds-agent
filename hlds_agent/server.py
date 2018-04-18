@@ -1,7 +1,8 @@
 import asyncore
+import json
 import socket
 
-from .handler import CleanHandler, DateHandler, NoopHandler, MessageHandler
+from .handler import CleanHandler, DateHandler, NoopHandler, MessageHandler, RawHandler
 
 class Server(asyncore.dispatcher):
     def __init__(self, host='0.0.0.0', port=27115):
@@ -18,13 +19,14 @@ class Server(asyncore.dispatcher):
     def handle_read(self):
         data = self.recv(2048)
         handler = CleanHandler(
-                    DateHandler(
-                        MessageHandler(
-                            NoopHandler())))
+                    RawHandler(
+                        DateHandler(
+                            MessageHandler(
+                                NoopHandler()))))
 
         cleanedData = handler(data, {})
 
-        print(cleanedData['type'] + " " + cleanedData['raw'])
+        print(json.dumps(cleanedData))
 
 
     def handle_write(self):
