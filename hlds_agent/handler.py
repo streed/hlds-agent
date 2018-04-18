@@ -185,7 +185,7 @@ class MessageHandler(Handler):
     def handle_interactions(self, data, out):
         out['type'] = 'game_interaction'
 
-        interaction_data = re.search(r'"([^<]+)<([^>]+)><([^<]+)><([^>]+)>" (.*)', data)
+        interaction_data = re.search(r'"([^<]+)<([^>]+)><([^<]+)><([^>]*)>" (.*)', data)
 
         if interaction_data:
             name, _type, steam_id, team, action = interaction_data.groups()
@@ -194,7 +194,32 @@ class MessageHandler(Handler):
                                   'entity_type': _type,
                                   'steam_id': steam_id,
                                   'team': team,
-                                  'action': action}
-
+                                  'action': self.handle_action(action)}
         return out
 
+    def handle_action(self, action):
+        if action.startswith("stats:"):
+            return self.handle_player_stats(action)
+        else:
+            action_parse = re.search(r'([\w]+) "([^<]+)<([^>]+)><([^<]+)><([^>]+)>" ([\w]+) "(.*)"', action)
+
+            if action_parse:
+                verb, name, _type, steam_id, team, adverb, noun = action_parse.groups()
+
+                return {'verb': verb,
+                        'name': name,
+                        'type': _type,
+                        'team': team,
+                        'steam_id': steam_id,
+                        'adverb': adverb,
+                        'noun': noun}
+            else:
+                killed_by = re.search(r'has been killed by "([^"]+)"', action)
+
+                if killed_by:
+
+                    return {'verb': 'killed by',
+                            'noun': killed_by.groups()[0]}
+
+    def handle_player_stats(self, stats):
+        return {}

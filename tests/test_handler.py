@@ -66,4 +66,26 @@ def test_MessageHandler_interaction():
                                   'entity_type': 'generic_ent',
                                   'steam_id': 'NoAuthID',
                                   'team': 'neutral',
-                                  'action': 'killed "New Playerd<25><STEAM_0:1:29713080><players>" with "trigger_hurt"'})
+                                  'action': {'verb': 'killed',
+                                      'name': 'New Playerd',
+                                      'type': '25',
+                                      'steam_id': 'STEAM_0:1:29713080',
+                                      'team': 'players',
+                                      'adverb': 'with',
+                                      'noun': 'trigger_hurt'}})
+
+def test_MessageHandler_killed_by():
+    line = '17/04/2018 - 03:06:44: "monster_shockroach<monster><NoAuthID><enemy>" has been killed by "invalid_ent"'
+    messageHandler = DateHandler(MessageHandler(NoopHandler()))
+
+    out = messageHandler.parse(line, {})
+
+    assert(out['type'] == 'game_interaction')
+    assert(out['interaction'] == {'who': 'monster_shockroach',
+                                  'entity_type': 'monster',
+                                  'steam_id': 'NoAuthID',
+                                  'team': 'enemy',
+                                  'action': {'verb': 'killed by',
+                                             'noun': 'invalid_ent'}})
+
+    out = messageHandler.parse(line, {})
