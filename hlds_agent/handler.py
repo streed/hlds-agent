@@ -60,7 +60,7 @@ class DateHandler(Handler):
         except ValueError as e:
             out['date'] = datetime.strptime(date, "%m/%d/%Y - %H:%M:%S")
 
-        out['date'] = time.mktime(out['date'].timetuple())
+        out['date'] = int(time.mktime(out['date'].timetuple()))
 
         return self._next(data[23:], out)
 
@@ -257,12 +257,14 @@ class MessageHandler(Handler):
                     'adverb': adverb,
                     'noun': noun}
         else:
-            killed_by = re.search(r'has been killed by "([^"]+)"', action)
+            wordy_action = re.search(r'([\w\d, ]+) ?("([^"]+)")?', action)
 
-            if killed_by:
-
-                return {'verb': 'killed by',
-                        'noun': killed_by.groups()[0]}
+            if wordy_action:
+                verb, _, noun = wordy_action.groups()
+                if verb:
+                    verb = verb.rstrip(' ')
+                return {'verb': verb,
+                        'noun': noun}
 
     def handle_player_stats(self, stats, out):
         stats_parsed = re.search(r'stats: frags="([^"]+)" deaths="([^"]+)" health="([^"]+)"', stats)
