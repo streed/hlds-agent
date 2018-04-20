@@ -91,11 +91,15 @@ def test_MessageHandler_killed_by(messageHandler):
     out = messageHandler.parse(line, {})
 
 def test_MessageHandler_player_stats(messageHandler):
-    line = '17/04/2018 - 03:07:12: "ltkitty<9><STEAM_0:1:8134911><players>" stats: frags="0.00" deaths="1" health="82"'
+    line = '17/04/2018 - 03:07:12: "ltkitty<9><STEAM_0:1:813><players>" stats: frags="0.00" deaths="1" health="82"'
     out = messageHandler.parse(line, {})
 
     assert(out['type'] == 'game_player_stats')
-    assert(out['stats'] == {'frags': 0.0,
+    assert(out['stats'] == {'who': 'ltkitty',
+                            'entity_type': '9',
+                            'steam_id': 'STEAM_0:1:813',
+                            'team': 'players',
+                            'frags': 0.0,
                             'deaths': 1,
                             'health': 82})
 
@@ -182,8 +186,7 @@ def test_MessageHandler_cs_disconnected(messageHandler):
                                   'entity_type': '1',
                                   'steam_id': 'STEAM_0:0:123',
                                   'team': 'TERRORIST',
-                                  'action': {'verb': 'disconnected',
-                                             'noun': None}})
+                                  'action': {'verb': 'disconnected'}})
 
 def test_MessageHandler_cs_entered_the_game(messageHandler):
     line = '04/19/2018 - 01:38:43: "Player<1><STEAM_0:0:123><TERRORIST>" entered the game'
@@ -195,8 +198,7 @@ def test_MessageHandler_cs_entered_the_game(messageHandler):
                                   'entity_type': '1',
                                   'steam_id': 'STEAM_0:0:123',
                                   'team': 'TERRORIST',
-                                  'action': {'verb': 'entered the game',
-                                             'noun': None}})
+                                  'action': {'verb': 'entered the game'}})
 
 def test_MessageHandler_cs_connected(messageHandler):
     line = '04/19/2018 - 01:37:50: "Player<1><STEAM_0:0:123><>" connected, address "127.0.0.1:27005"'
@@ -220,5 +222,4 @@ def test_MessageHandler_cs_steam_validated(messageHandler):
                                   'entity_type': '1',
                                   'steam_id': 'STEAM_0:0:123',
                                   'team': '',
-                                  'action': {'verb': 'STEAM USERID validated',
-                                             'noun': None}})
+                                  'action': {'verb': 'STEAM USERID validated'}})

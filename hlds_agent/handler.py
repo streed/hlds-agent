@@ -88,7 +88,7 @@ class MessageHandler(Handler):
             out['type'] = 'cvar'
         elif data.startswith("is empty"):
             out['type'] = 'cvar_empty'
-        elif data.starswith("name"):
+        elif data.startswith("name"):
             out['type'] = 'server_name'
         elif data.startswith("say"):
             out['type'] = 'server_say'
@@ -234,6 +234,10 @@ class MessageHandler(Handler):
             name, _type, steam_id, team, action = interaction_data.groups()
 
             if action.startswith("stats:"):
+                out['stats'] = {'who': name,
+                                'entity_type': _type,
+                                'steam_id': steam_id,
+                                'team': team}
                 out = self.handle_player_stats(action, out)
             else:
                 out['interaction'] = {'who': name,
@@ -263,8 +267,12 @@ class MessageHandler(Handler):
                 verb, _, noun = wordy_action.groups()
                 if verb:
                     verb = verb.rstrip(' ')
-                return {'verb': verb,
-                        'noun': noun}
+
+                if noun:
+                    return {'verb': verb,
+                            'noun': noun}
+                else:
+                    return {'verb': verb}
 
     def handle_player_stats(self, stats, out):
         stats_parsed = re.search(r'stats: frags="([^"]+)" deaths="([^"]+)" health="([^"]+)"', stats)
@@ -273,8 +281,9 @@ class MessageHandler(Handler):
             frags, deaths, health = stats_parsed.groups()
 
             out['type'] = 'game_player_stats'
-            out['stats'] = {'frags': float(frags),
-                            'deaths': float(deaths),
-                            'health': float(health)}
+            out['stats']['frags'] = float(frags)
+            out['stats']['health'] = float(health)
+            out['stats']['deaths'] = float(deaths)
+
         return out
 
