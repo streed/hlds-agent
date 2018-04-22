@@ -21,12 +21,10 @@ class ElasticSearchSink(Sink):
         self.es = Elasticsearch()
 
     def send(self, blobs):
-        todaysIndex = self.get_index() 
-
         for blob in blobs:
-            print(blob['type'])
+            todaysIndex = '%s-%s' % (blob['type'], self.get_index())
             res = self.es.index(index=todaysIndex, doc_type=blob['type'], body=blob)
-            print(res)
+            print(res['_id'] + ': ' + repr(blob))
 
 
     def get_index(self):

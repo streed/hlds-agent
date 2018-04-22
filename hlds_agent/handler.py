@@ -87,7 +87,7 @@ class MessageHandler(Handler):
         if data.startswith("cvar"):
             out['type'] = 'cvar'
         elif data.startswith("is empty"):
-            out['type'] = 'cvar_empty'
+            out['type'] = 'server_status'
         elif data.startswith("name"):
             out['type'] = 'server_name'
         elif data.startswith("say"):
