@@ -48,14 +48,16 @@ class HttpSink(Sink):
 
 
     def send(self, blobs):
-        headers = self._headers()
-        compressed_blob = self._compress(blobs)
-        response = requests.post(self.host, headers=headers, data={'blob': compressed_blob})
+        if blobs:
+            headers = self._headers()
+            compressed_blob = self._compress(blobs)
 
-        if response.status_code == 200:
-            return True
-        else:
-            response.raise_for_status()
+            response = requests.post(self.host, headers=headers, data=json.dumps({'blob': compressed_blob.decode('utf-8')}))
+
+            if response.status_code == 200:
+                return True
+            else:
+                response.raise_for_status()
 
     def _compress(self, blobs):
         json_blobs = json.dumps(blobs)
