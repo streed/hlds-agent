@@ -60,9 +60,13 @@ class DateHandler(Handler):
         except ValueError as e:
             out['date'] = datetime.strptime(date, "%m/%d/%Y - %H:%M:%S")
 
-        out['date'] = int(time.mktime(out['date'].timetuple()))
+        out['server_date'] = int(time.mktime(out['date'].timetuple()))
+        out['date'] = self.get_time()
 
         return self._next(data[23:], out)
+
+    def get_time(self):
+        return int(time.mktime(time.gmtime()))
 
 class MessageHandler(Handler):
     def __init__(self, _next):

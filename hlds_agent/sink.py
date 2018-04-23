@@ -1,5 +1,7 @@
 import time
 
+import requests
+
 from elasticsearch import Elasticsearch
 
 class Sink(object):
@@ -31,3 +33,12 @@ class ElasticSearchSink(Sink):
         day = time.strftime("%d-%m-%Y")
 
         return 'hlds-%s' % day
+
+
+class HttpSink(Sink):
+
+    def __init__(self, auth_token, host):
+        self.host = host
+
+    def send(self, blobs):
+        pass

@@ -10,13 +10,20 @@ def messageHandler():
     return DateHandler(MessageHandler(NoopHandler()))
 
 
-def test_DateHandler():
+@pytest.fixture
+def dateHandler():
+    class DateHandlerTest(DateHandler):
+        def get_time(self):
+            return 1
+
+    return DateHandlerTest(NoopHandler())
+
+def test_DateHandler(dateHandler):
     line = '15/04/2018 - 23:56:25: Server cvar "mp_consistency" = "0"'
-    dateHandler = DateHandler(NoopHandler())
 
     out = dateHandler.parse(line, {})
 
-    assert(out['date'] == int(time.mktime(datetime.datetime(2018, 4, 15, 23, 56, 25).timetuple())))
+    assert(out['date'] == 1)
 
 def test_MessageHandler_cvar(messageHandler):
     line = '15/04/2018 - 23:56:25: Server cvar "mp_consistency" = "0"'
