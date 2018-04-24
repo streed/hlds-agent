@@ -5,6 +5,8 @@ import time
 
 from datetime import datetime
 
+from .log import log
+
 class Handler(object):
     def __init__(self, _next):
         self._next = _next
@@ -28,6 +30,7 @@ class CleanHandler(Handler):
         super().__init__(_next)
 
     def parse(self, data, out):
+        log.debug('CleanHandler')
         header = data[:8]
         headerValue, headerLog = struct.unpack('<L4s', header)
         logLine = data[10:-2].decode('utf-8')
@@ -41,6 +44,7 @@ class RawHandler(Handler):
         super().__init__(_next)
 
     def parse(self, data, out):
+        log.debug('RawHandler')
         out['raw'] = data
 
         return self._next.parse(data, out)
@@ -54,6 +58,7 @@ class DateHandler(Handler):
 
 
     def parse(self, data, out):
+        log.debug('DateHandler')
         date = data[:21]
         try:
             out['date'] = datetime.strptime(date, "%d/%m/%Y - %H:%M:%S")
@@ -73,6 +78,7 @@ class MessageHandler(Handler):
         super().__init__(_next)
 
     def parse(self, data, out):
+        log.debug('MessageHandler')
         if data.startswith("Server"):
             out = self.handle_server(data[7:], out)
         elif data.startswith("Log"):
@@ -88,6 +94,7 @@ class MessageHandler(Handler):
 
 
     def handle_server(self, data, out):
+        log.debug('MessageHandler.handle_server')
         if data.startswith("cvar"):
             out['type'] = 'cvar'
         elif data.startswith("is empty"):
@@ -103,6 +110,7 @@ class MessageHandler(Handler):
         
 
     def handle_log(self, data, out):
+        log.debug('MessageHandler.handle_log')
         out['type'] = 'log'
 
         log_data = re.search(r'file started \(file "([^"]+)"\) \(game "([^"]+)"\) \(version "([^"]+)"\)', data)
@@ -118,12 +126,14 @@ class MessageHandler(Handler):
 
 
     def handle_rcon(self, data, out):
+        log.debug('MessageHandler.handle_rcon')
         out['type'] = 'rcon'
 
         return out
 
 
     def handle_map(self, data, out):
+        log.debug('MessageHandler.handle_map')
         out['type'] = 'map'
 
         map_name = re.search(r'map "([^"]+)"', data)
@@ -137,6 +147,7 @@ class MessageHandler(Handler):
 
 
     def handle_game(self, data, out):
+        log.debug('MessageHandler.handle_game')
         if data.startswith("Vote"):
             out = self.handle_vote(data[5:], out)
         elif data.startswith("Kick"):
@@ -153,6 +164,7 @@ class MessageHandler(Handler):
         return out
 
     def handle_vote(self, data, out):
+        log.debug('MessageHandler.handle_vote')
         out['type'] = 'game_vote'
 
         vote = re.search(data, r'for map change to "([^"]+)" finished, succeeded. \(([\d\.]+)% reached, needed ([\d\.]+)%.\)/')
@@ -172,6 +184,7 @@ class MessageHandler(Handler):
         return out
 
     def handle_kick(self, data, out):
+        log.debug('MessageHandler.handle_kick')
         out['type'] = 'game_kick'
 
         kick_data = re.search(r'"([^<]+)<([\d]+)><(STEAM_\d+:\d:\d+)><(.*)>" was kicked by "([^"]+)"', data)
@@ -187,6 +200,7 @@ class MessageHandler(Handler):
         return out
 
     def handle_world(self, data, out):
+        log.debug('MessageHandler.handle_world')
         out['type'] = 'game_world'
 
         world_parsed = re.search(r'triggered "([^"]+)"', data)
@@ -197,6 +211,7 @@ class MessageHandler(Handler):
         return out
 
     def handle_team(self, data, out):
+        log.debug('MessageHandler.handle_team')
         out['type'] = 'game_team'
 
         team_parsed = re.search(r'"([^"]+)" triggered "([^"]+)" \(\1 "([^"]+)"\) \(([\w_]+) "([^"]+)"\)', data)
@@ -225,11 +240,13 @@ class MessageHandler(Handler):
         return out
 
     def handle_player(self, data, out):
+        log.debug('MessageHandler.handle_player')
         out['type'] = 'game_player'
 
         return out
 
     def handle_interactions(self, data, out):
+        log.debug('MessageHandler.handle_interactions')
         out['type'] = 'game_interaction'
 
         interaction_data = re.search(r'"([^<]+)<([^>]+)><([^<]+)><([^>]*)>" (.*)', data)
@@ -252,6 +269,7 @@ class MessageHandler(Handler):
         return out
 
     def handle_action(self, action):
+        log.debug('MessageHandler.handle_action')
         action_parse = re.search(r'([\w]+) "([^<]+)<([^>]+)><([^<]+)><([^>]+)>" ([\w]+) "(.*)"', action)
 
         if action_parse:
@@ -279,6 +297,7 @@ class MessageHandler(Handler):
                     return {'verb': verb}
 
     def handle_player_stats(self, stats, out):
+        log.debug('MessageHandler.handle_player_stats')
         stats_parsed = re.search(r'stats: frags="([^"]+)" deaths="([^"]+)" health="([^"]+)"', stats)
 
         if stats_parsed:

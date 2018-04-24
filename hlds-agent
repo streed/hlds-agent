@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+
+"""
+hlds-agent
+
+This agent listens on a specific port and address for the UDP logger from
+hlds and srcds.
+
+The agent will spit out structured json logs to a specific sink.
+
+The default will be to a HTTP endpoint.
+
+Usage:
+    hlds-agent [--listen-address=<address>] [--listen-port=<port>] [--sink=HttpSink] [--http-sink-host=<host> [--http-auth-token=<token>]]
+    hlds-agent .. --sink=StdOut
+
+Options:
+    -h, --help                 Show this help screen.
+    --version                  Show this version.
+    --listen-address=<addr>    What address to listen on. [default: 127.0.0.1]
+    --listen-port=<port>       What port to listen on. [default: 27115]
+    --sink=<sink>              Either StdOutSink, HttpSink [default: StdOutSink]
+    --http-sink-host=<host>    Where to post strucuture log to. [default: http://127.0.0.1:5000/]
+    --http-auth-token=<token>  Token to use for authentication to http sink. [default: test]
+"""
+from docopt import docopt
+
+import asyncore
+
+from hlds_agent.server import Server
+from hlds_agent.collector import Collector 
+from hlds_agent.sink import HttpSink, StdOutSink
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__, version='0.0.1')
+
+    listen_address = '127.0.0.1'
+    
+    sink_type = arguments['--sink'].lower()
+    sink = None
+
+    if sink_type == 'stdoutsink':
+        sink = StdOutSink()
+    elif sink_type == 'httpsink':
+        sink = HttpSink(arguments['--http-sink-host'], auth_token=arguments['--http-auth-token'])
+
+    collector = Collector(sink)
+    s = Server(collector)
+
+    asyncore.loop()

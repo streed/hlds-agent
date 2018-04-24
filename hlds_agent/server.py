@@ -3,6 +3,7 @@ import json
 import socket
 
 from .handler import CleanHandler, DateHandler, NoopHandler, MessageHandler, RawHandler
+from .log import log
 
 class Server(asyncore.dispatcher):
     def __init__(self, collector, host='0.0.0.0', port=27115):
@@ -24,6 +25,8 @@ class Server(asyncore.dispatcher):
                             MessageHandler(
                                 NoopHandler()))))
 
+
+        log.debug('Received packet')
         cleanedData = handler(data, {})
 
         self.collector.put(cleanedData)

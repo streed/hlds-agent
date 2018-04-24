@@ -7,6 +7,8 @@ import snappy
 
 from elasticsearch import Elasticsearch
 
+from .log import log
+
 class Sink(object):
     
     def send(self, blobs):
@@ -20,26 +22,6 @@ class StdOutSink(Sink):
             print(blob)
 
 
-class ElasticSearchSink(Sink):
-
-    def __init__(self, host='127.0.0.1:9300'):
-        self.es = Elasticsearch()
-
-    def send(self, blobs):
-        for blob in blobs:
-            todaysIndex = '%s-%s' % (blob['type'], self.get_index())
-            res = self.es.index(index=todaysIndex, doc_type=blob['type'], body=blob)
-            print(res['_id'] + ': ' + repr(blob))
-
-        return True
-
-
-    def get_index(self):
-        day = time.strftime("%d-%m-%Y")
-
-        return 'hlds-%s' % day
-
-
 class HttpSink(Sink):
 
     def __init__(self, host, auth_token=None):
@@ -49,6 +31,7 @@ class HttpSink(Sink):
 
     def send(self, blobs):
         if blobs:
+            log.info("Sending %d blobs to %s", len(blobs), self.host)
             headers = self._headers()
             compressed_blob = self._compress(blobs)
 
