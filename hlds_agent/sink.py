@@ -5,8 +5,6 @@ import time
 import requests
 import snappy
 
-from elasticsearch import Elasticsearch
-
 from .log import log
 
 class Sink(object):

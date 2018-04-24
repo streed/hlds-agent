@@ -33,7 +33,7 @@ class Collector(threading.Thread):
 
                 self.sink.send(batch)
             except Exception as e:
-                print(e)
+                log.error(e)
 
 
     def put(self, blob):
